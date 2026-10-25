@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Critical Spare HT Motors Management Portal</title>
+    <!-- Tailwind CSS for Styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800">
+
+    <!-- Header / Navbar -->
+    <header class="bg-blue-900 text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex flex-col sm:flex-row justify-between items-center">
+            <div class="flex items-center space-x-3 mb-3 sm:mb-0">
+                <i data-lucide="zap" class="w-8 h-8 text-yellow-400"></i>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide">Multi-Plant HT Motor Critical Spares Portal</h1>
+                    <p class="text-xs text-blue-200">Centralized Asset & Spare Management Dashboard</p>
+                </div>
+            </div>
+            <div class="flex space-x-2">
+                <button onclick="openAddModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-4 py-2 rounded-lg flex items-center space-x-1 transition shadow">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                    <span>Add New Motor</span>
+                </button>
+                <button onclick="exportCSV()" class="bg-blue-700 hover:bg-blue-800 text-white text-sm font-semibold px-4 py-2 rounded-lg flex items-center space-x-1 transition shadow">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span>Export Excel/CSV</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <p class="text-xs font-semibold text-slate-500 uppercase">Total HT Motors</p>
+                <h3 id="statTotal" class="text-2xl font-bold text-slate-800 mt-1">0</h3>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <p class="text-xs font-semibold text-slate-500 uppercase">Ready Spares</p>
+                <h3 id="statReady" class="text-2xl font-bold text-emerald-600 mt-1">0</h3>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <p class="text-xs font-semibold text-slate-500 uppercase">On Order / Pending</p>
+                <h3 id="statOnOrder" class="text-2xl font-bold text-amber-600 mt-1">0</h3>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <p class="text-xs font-semibold text-slate-500 uppercase">Plants Covered</p>
+                <h3 id="statPlants" class="text-2xl font-bold text-blue-600 mt-1">0</h3>
+            </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                <div class="relative">
+                    <input type="text" id="searchInput" oninput="renderTable()" placeholder="Search tag, desc, make..." class="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+                </div>
+                <div>
+                    <select id="plantFilter" onchange="renderTable()" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <option value="">All Plants</option>
+                    </select>
+                </div>
+                <div>
+                    <select id="sectionFilter" onchange="renderTable()" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <option value="">All Sections</option>
+                    </select>
+                </div>
+                <div>
+                    <select id="conditionFilter" onchange="renderTable()" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <option value="">All Spare Conditions</option>
+                        <option value="Ready">Ready</option>
+                        <option value="On Order">On Order</option>
+                        <option value="Not Available">Not Available</option>
+                    </select>
+                </div>
+                <div>
+                    <button onclick="resetFilters()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-semibold py-2 rounded-lg transition border border-slate-300">
+                        Reset Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Table -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead class="bg-slate-800 text-slate-100 uppercase tracking-wider font-semibold">
+                        <tr>
+                            <th class="p-3">Plant</th>
+                            <th class="p-3">Line</th>
+                            <th class="p-3">Section</th>
+                            <th class="p-3">Tag</th>
+                            <th class="p-3">Description</th>
+                            <th class="p-3">Make</th>
+                            <th class="p-3">Type</th>
+                            <th class="p-3">Power (KW)</th>
+                            <th class="p-3">Voltage</th>
+                            <th class="p-3">Spare Status</th>
+                            <th class="p-3">Condition</th>
+                            <th class="p-3">Remarks</th>
+                            <th class="p-3 text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="motorTableBody" class="divide-y divide-slate-200">
+                        <!-- Rows rendered dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal for Edit / Add Motor -->
+    <div id="motorModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-3xl w-full p-6 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4 border-b pb-3">
+                <h3 id="modalTitle" class="text-lg font-bold text-slate-800">Edit Motor Details</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-6 h-6"></i></button>
+            </div>
+            <form id="motorForm" onsubmit="saveMotor(event)" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs">
+                <input type="hidden" id="editIndex">
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Plant / Unit *</label>
+                    <input type="text" id="inputUnit" required class="w-full p-2 border border-slate-300 rounded">
+                </div>
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Line No</label>
+                    <input type="text" id="inputLine" class="w-full p-2 border border-slate-300 rounded">
+                </div>
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Section *</label>
+                    <input type="text" id="inputSection" required class="w-full p-2 border border-slate-300 rounded">
+                </div>
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Equipment Tag *</label>
+                    <input type="text" id="inputTag" required class="w-full p-2 border border-slate-300 rounded">
+                </div>
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Equipment Description</label>
+                    <input type="text" id="inputDesc" class="w-full p-2 border border-slate-300 rounded">
+                </div>
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Make</label>
+                    <input type="text" id="inputMake" class="w-full p-2 border border-slate-300 rounded">
+                </div>
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Type (Slipring / Squirrel Cage)</label>
+                    <input type="text" id="inputType" class="w-full p-2 border border-slate-300 rounded">
+                </div>
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Power (KW)</label>
+                    <input type="text" id="inputPower" class="w-full p-2 border border-slate-300 rounded">
+                </div>
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Frame Size</label>
+                    <input type="text" id="inputFrame" class="w-full p-2 border border-slate-300 rounded">
+                </div>
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Stator Voltage (V)</label>
+                    <input type="text" id="inputStatorVolt" class="w-full p-2 border border-slate-300 rounded">
+                </div>
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Stator Current (A)</label>
+                    <input type="text" id="inputStatorCurr" class="w-full p-2 border border-slate-300 rounded">
+                </div>
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Motor RPM</label>
+                    <input type="text" id="inputRPM" class="w-full p-2 border border-slate-300 rounded">
+                </div>
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Spares Available (Yes/No)</label>
+                    <select id="inputSpareAvail" class="w-full p-2 border border-slate-300 rounded">
+                        <option value="Yes">Yes</option>
+                        <option value="No">No</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Spare Condition</label>
+                    <input type="text" id="inputCondition" placeholder="e.g. Ready, On Order" class="w-full p-2 border border-slate-300 rounded">
+                </div>
+                <div class="sm:col-span-2 md:col-span-3">
+                    <label class="block font-medium text-slate-700 mb-1">Remarks / Storage Location</label>
+                    <textarea id="inputRemarks" rows="2" class="w-full p-2 border border-slate-300 rounded"></textarea>
+                </div>
+                <div class="sm:col-span-2 md:col-span-3 flex justify-end space-x-2 pt-3 border-t">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 border border-slate-300 text-slate-600 rounded-lg hover:bg-slate-100">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700">Save Data</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        // Initial Dataset compiled from your Excel File sheets: DALLA & Sidhi
+        let motorsData = [
+            // --- DALLA PLANT DATA ---
+            { Unit: "Dalla", Line: "Line2", Section: "Coal Mill", Tag: "L42MD1", Desc: "Coal Mill MD", Make: "BHEL", Type: "Slipring", KW: "500", Frame: "1LS7630", StatorVolt: "6600", StatorCurr: "51.46", RPM: "1500", SpareAvail: "Yes", Remarks: "Available at site in Healthy condition", Condition: "Ready" },
+            { Unit: "Dalla", Line: "Line2", Section: "Kiln", Tag: "422FN2", Desc: "Bag House Fan", Make: "BHEL", Type: "Slipring", KW: "1200", Frame: "1LS7806", StatorVolt: "6600", StatorCurr: "123.5", RPM: "750", SpareAvail: "Yes", Remarks: "Available at site in Healthy condition", Condition: "Ready" },
+            { Unit: "Dalla", Line: "Line2", Section: "Kiln", Tag: "442FN1", Desc: "PH Fan", Make: "BHEL", Type: "Slipring", KW: "2300", Frame: "1RR7716", StatorVolt: "6600", StatorCurr: "236.71", RPM: "1000", SpareAvail: "Yes", Remarks: "Available @2000kW", Condition: "Ready" },
+            { Unit: "Dalla", Line: "Line1", Section: "Kiln", Tag: "441FN1", Desc: "PH Fan", Make: "CGL", Type: "Slipring", KW: "1950", Frame: "560", StatorVolt: "6600", StatorCurr: "217", RPM: "1000", SpareAvail: "No", Remarks: "On Order. Will deliver by Feb'2027", Condition: "On Order" },
+            { Unit: "Dalla", Line: "Line1", Section: "Coal Mill", Tag: "L41BM1", Desc: "Coal Mill MD", Make: "BHEL", Type: "Slipring", KW: "430", Frame: "BW12176H6A", StatorVolt: "6600", StatorCurr: "47.5", RPM: "987", SpareAvail: "Yes", Remarks: "Available at site in Healthy condition", Condition: "Ready" },
+            { Unit: "Dalla", Line: "Line2", Section: "Raw Mill", Tag: "362FN1", Desc: "VRM Fan", Make: "BHEL", Type: "Slipring", KW: "3700", Frame: "1RU7718", StatorVolt: "6600", StatorCurr: "400", RPM: "993", SpareAvail: "Yes", Remarks: "Available @3300kW", Condition: "Ready" },
+            { Unit: "Dalla", Line: "Line2", Section: "Raw Mill", Tag: "362MD1", Desc: "VRM MD", Make: "BHEL", Type: "Slipring", KW: "3300", Frame: "1RU7718", StatorVolt: "6600", StatorCurr: "384", RPM: "993", SpareAvail: "Yes", Remarks: "Available @3300kW", Condition: "Ready" },
+            { Unit: "Dalla", Line: "Line1", Section: "Raw Mill", Tag: "344MD2", Desc: "RP MD", Make: "BHEL", Type: "Slipring", KW: "1000", Frame: "1RB756334", StatorVolt: "6600", StatorCurr: "108", RPM: "1482", SpareAvail: "Yes", Remarks: "Available at site in Healthy condition", Condition: "Ready" },
+            
+            // --- SIDHI PLANT DATA ---
+            { Unit: "Sidhi", Line: "Line-1", Section: "Rawmill", Tag: "361MD1", Desc: "Raw Mill Main Drive", Make: "BHEL", Type: "Slipring", KW: "3300", Frame: "IRU7718-6", StatorVolt: "6600", StatorCurr: "357", RPM: "993", SpareAvail: "No", Remarks: "Available at Dalla Plant in 3300 KW rating", Condition: "Ready" },
+            { Unit: "Sidhi", Line: "Line-1", Section: "Coal Mill", Tag: "L41MD1", Desc: "Coal Mill Main drive", Make: "BHEL", Type: "Slipring", KW: "500", Frame: "ILS7630-4", StatorVolt: "6600", StatorCurr: "57.5", RPM: "1464", SpareAvail: "No", Remarks: "Available at Dalla Plant", Condition: "Ready" },
+            { Unit: "Sidhi", Line: "Line-1", Section: "Coal Mill", Tag: "L41 FN2", Desc: "Coal Mill Fan", Make: "ABB", Type: "Squirrel Cage", KW: "500", Frame: "AMA400L6ABAFi", StatorVolt: "690", StatorCurr: "550", RPM: "990", SpareAvail: "Yes", Remarks: "Available at site in Healthy condition", Condition: "Ready" },
+            { Unit: "Sidhi", Line: "Line-1", Section: "Kiln", Tag: "461 MD1", Desc: "Kiln Main drive", Make: "KIRLOSKAR", Type: "DC", KW: "1000", Frame: "KWDC630SPL", StatorVolt: "630", StatorCurr: "1680", RPM: "1000/1100", SpareAvail: "No", Remarks: "Available at Bela Plant. Under STO for Sidhi", Condition: "Ready" },
+            { Unit: "Sidhi", Line: "Line-1", Section: "Kiln", Tag: "451 FN1", Desc: "Calciner fan", Make: "BHEL", Type: "Slipring", KW: "1220", Frame: "ILS7804-6", StatorVolt: "6600", StatorCurr: "135", RPM: "992", SpareAvail: "Yes", Remarks: "New CGL Motor received on 20 Sep 23", Condition: "Ready" }
+        ];
+
+        // Load saved local storage data if exists
+        if(localStorage.getItem('motorsData')) {
+            motorsData = JSON.parse(localStorage.getItem('motorsData'));
+        }
+
+        function saveToStorage() {
+            localStorage.setItem('motorsData', JSON.stringify(motorsData));
+        }
+
+        // Initialize Lucide Icons & Filters
+        document.addEventListener('DOMContentLoaded', () => {
+            populateFilterOptions();
+            renderTable();
+            lucide.createIcons();
+        });
+
+        function populateFilterOptions() {
+            const plants = [...new Set(motorsData.map(d => d.Unit).filter(Boolean))];
+            const sections = [...new Set(motorsData.map(d => d.Section).filter(Boolean))];
+
+            const plantSel = document.getElementById('plantFilter');
+            plantSel.innerHTML = '<option value="">All Plants</option>' + plants.map(p => `<option value="${p}">${p}</option>`).join('');
+
+            const secSel = document.getElementById('sectionFilter');
+            secSel.innerHTML = '<option value="">All Sections</option>' + sections.map(s => `<option value="${s}">${s}</option>`).join('');
+        }
+
+        function renderTable() {
+            const searchStr = document.getElementById('searchInput').value.toLowerCase();
+            const selectedPlant = document.getElementById('plantFilter').value;
+            const selectedSection = document.getElementById('sectionFilter').value;
+            const selectedCond = document.getElementById('conditionFilter').value;
+
+            const filtered = motorsData.filter(item => {
+                const matchSearch = (item.Tag || '').toLowerCase().includes(searchStr) ||
+                                    (item.Desc || '').toLowerCase().includes(searchStr) ||
+                                    (item.Make || '').toLowerCase().includes(searchStr) ||
+                                    (item.Unit || '').toLowerCase().includes(searchStr);
+                const matchPlant = !selectedPlant || item.Unit === selectedPlant;
+                const matchSec = !selectedSection || item.Section === selectedSection;
+                const matchCond = !selectedCond || (item.Condition || '').toLowerCase().includes(selectedCond.toLowerCase());
+                return matchSearch && matchPlant && matchSec && matchCond;
+            });
+
+            // Update KPIs
+            document.getElementById('statTotal').innerText = motorsData.length;
+            document.getElementById('statReady').innerText = motorsData.filter(d => (d.Condition||'').toLowerCase().includes('ready')).length;
+            document.getElementById('statOnOrder').innerText = motorsData.filter(d => (d.Condition||'').toLowerCase().includes('order')).length;
+            document.getElementById('statPlants').innerText = [...new Set(motorsData.map(d => d.Unit))].length;
+
+            const tbody = document.getElementById('motorTableBody');
+            tbody.innerHTML = '';
+
+            filtered.forEach((item, index) => {
+                const globalIndex = motorsData.indexOf(item);
+                const badgeColor = (item.Condition || '').toLowerCase().includes('ready') ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800';
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50 border-b border-slate-200';
+                tr.innerHTML = `
+                    <td class="p-3 font-semibold text-blue-900">${item.Unit || '-'}</td>
+                    <td class="p-3">${item.Line || '-'}</td>
+                    <td class="p-3">${item.Section || '-'}</td>
+                    <td class="p-3 font-mono font-bold text-slate-900">${item.Tag || '-'}</td>
+                    <td class="p-3">${item.Desc || '-'}</td>
+                    <td class="p-3">${item.Make || '-'}</td>
+                    <td class="p-3">${item.Type || '-'}</td>
+                    <td class="p-3 font-semibold">${item.KW || '-'}</td>
+                    <td class="p-3">${item.StatorVolt || '-'}</td>
+                    <td class="p-3 font-medium">${item.SpareAvail || '-'}</td>
+                    <td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${badgeColor}">${item.Condition || 'Pending'}</span></td>
+                    <td class="p-3 text-slate-500 max-w-xs truncate" title="${item.Remarks}">${item.Remarks || '-'}</td>
+                    <td class="p-3 text-center">
+                        <button onclick="editMotor(${globalIndex})" class="text-blue-600 hover:text-blue-800 p-1" title="Edit Data"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                        <button onclick="deleteMotor(${globalIndex})" class="text-red-500 hover:text-red-700 p-1 ml-1" title="Delete Motor"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            lucide.createIcons();
+        }
+
+        function resetFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('plantFilter').value = '';
+            document.getElementById('sectionFilter').value = '';
+            document.getElementById('conditionFilter').value = '';
+            renderTable();
+        }
+
+        function openAddModal() {
+            document.getElementById('modalTitle').innerText = 'Add New Plant Motor';
+            document.getElementById('editIndex').value = '-1';
+            document.getElementById('motorForm').reset();
+            document.getElementById('motorModal').classList.remove('hidden');
+        }
+
+        function editMotor(index) {
+            const item = motorsData[index];
+            document.getElementById('modalTitle').innerText = 'Edit Motor Data (' + item.Tag + ')';
+            document.getElementById('editIndex').value = index;
+            document.getElementById('inputUnit').value = item.Unit || '';
+            document.getElementById('inputLine').value = item.Line || '';
+            document.getElementById('inputSection').value = item.Section || '';
+            document.getElementById('inputTag').value = item.Tag || '';
+            document.getElementById('inputDesc').value = item.Desc || '';
+            document.getElementById('inputMake').value = item.Make || '';
+            document.getElementById('inputType').value = item.Type || '';
+            document.getElementById('inputPower').value = item.KW || '';
+            document.getElementById('inputFrame').value = item.Frame || '';
+            document.getElementById('inputStatorVolt').value = item.StatorVolt || '';
+            document.getElementById('inputStatorCurr').value = item.StatorCurr || '';
+            document.getElementById('inputRPM').value = item.RPM || '';
+            document.getElementById('inputSpareAvail').value = item.SpareAvail || 'Yes';
+            document.getElementById('inputCondition').value = item.Condition || '';
+            document.getElementById('inputRemarks').value = item.Remarks || '';
+
+            document.getElementById('motorModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('motorModal').classList.add('hidden');
+        }
+
+        function saveMotor(e) {
+            e.preventDefault();
+            const idx = parseInt(document.getElementById('editIndex').value);
+            const newItem = {
+                Unit: document.getElementById('inputUnit').value,
+                Line: document.getElementById('inputLine').value,
+                Section: document.getElementById('inputSection').value,
+                Tag: document.getElementById('inputTag').value,
+                Desc: document.getElementById('inputDesc').value,
+                Make: document.getElementById('inputMake').value,
+                Type: document.getElementById('inputType').value,
+                KW: document.getElementById('inputPower').value,
+                Frame: document.getElementById('inputFrame').value,
+                StatorVolt: document.getElementById('inputStatorVolt').value,
+                StatorCurr: document.getElementById('inputStatorCurr').value,
+                RPM: document.getElementById('inputRPM').value,
+                SpareAvail: document.getElementById('inputSpareAvail').value,
+                Condition: document.getElementById('inputCondition').value,
+                Remarks: document.getElementById('inputRemarks').value
+            };
+
+            if (idx === -1) {
+                motorsData.push(newItem);
+            } else {
+                motorsData[idx] = newItem;
+            }
+
+            saveToStorage();
+            populateFilterOptions();
+            renderTable();
+            closeModal();
+        }
+
+        function deleteMotor(index) {
+            if(confirm("Are you sure you want to delete this motor entry?")) {
+                motorsData.splice(index, 1);
+                saveToStorage();
+                renderTable();
+            }
+        }
+
+        function exportCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,Plant,Line,Section,Tag,Description,Make,Type,Power_KW,Frame,StatorVolt,StatorCurr,RPM,SpareAvailable,Condition,Remarks\n";
+            motorsData.forEach(d => {
+                let row = [
+                    `"${d.Unit || ''}"`,
+                    `"${d.Line || ''}"`,
+                    `"${d.Section || ''}"`,
+                    `"${d.Tag || ''}"`,
+                    `"${d.Desc || ''}"`,
+                    `"${d.Make || ''}"`,
+                    `"${d.Type || ''}"`,
+                    `"${d.KW || ''}"`,
+                    `"${d.Frame || ''}"`,
+                    `"${d.StatorVolt || ''}"`,
+                    `"${d.StatorCurr || ''}"`,
+                    `"${d.RPM || ''}"`,
+                    `"${d.SpareAvail || ''}"`,
+                    `"${d.Condition || ''}"`,
+                    `"${d.Remarks || ''}"`
+                ].join(",");
+                csvContent += row + "\n";
+            });
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "Critical_HT_Motors_MultiPlant.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
